@@ -8,6 +8,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -18,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -42,7 +44,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             new RuntimeException("token非法");
         }
         //从redis获取信息
-        String key = "login" + userId;
+        String key = "login:" + userId;
         Object loginUser = redisCache.getCacheObject(key);
         if (ObjectUtils.isEmpty(loginUser)){
           throw   new RuntimeException("用户未登录");
