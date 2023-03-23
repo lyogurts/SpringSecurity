@@ -9,3 +9,8 @@ spring:
     port: 6379
     database: 0
     password: redis
+#mybatis-plus:
+#mybatis-plus:
+#  config-location: classpath:com/sangeng/mapper/MenuMapper.xml
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml

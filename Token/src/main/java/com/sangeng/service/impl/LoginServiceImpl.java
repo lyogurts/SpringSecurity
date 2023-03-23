@@ -11,55 +11,49 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class LoginServiceImpl implements LoginService {
+
     @Autowired
     private AuthenticationManager authenticationManager;
+
     @Autowired
     private RedisCache redisCache;
-//    @Autowired
-//    private PasswordEncoder passwordEncoder;
+
     @Override
     public ResponseResult login(User user) {
-        //AuthenticationManager authenticationManager 进行用户认证
-
-        UsernamePasswordAuthenticationToken authenticateToken = new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword());
-//        authenticate是接口,UsernamePasswordAuthenticationToken是实现类
-        Authentication authenticate = authenticationManager.authenticate(authenticateToken);
-
-        //如果认证没通过给出对应的提示
-        if (ObjectUtils.isEmpty(authenticate)){
-            throw  new RuntimeException("登录失败");
+        //AuthenticationManager authenticate进行用户认证
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getUserName(),user.getPassword());
+        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
+        //如果认证没通过，给出对应的提示
+        if(Objects.isNull(authenticate)){
+            throw new RuntimeException("登录失败");
         }
-
-        //认证通过了。使用userid生成一个jwt
+        //如果认证通过了，使用userid生成一个jwt jwt存入ResponseResult返回
         LoginUser loginUser = (LoginUser) authenticate.getPrincipal();
-        String id = loginUser.getUser().getId().toString();
-        String jwt = JwtUtil.createJWT(id);
-        //把完整的用户信息存入redis userid为key
-        redisCache.setCacheObject("login:"+ id,loginUser);
-        //把token响应给前端
-        Map<String , String> map = new HashMap<>();
+        String userid = loginUser.getUser().getId().toString();
+        String jwt = JwtUtil.createJWT(userid);
+        Map<String,String> map = new HashMap<>();
         map.put("token",jwt);
+        //把完整的用户信息存入redis  userid作为key
+        redisCache.setCacheObject("login:"+userid,loginUser);
         return new ResponseResult(200,"登录成功",map);
     }
 
     @Override
     public ResponseResult logout() {
-        //获取SecurityContextHolder中的用户id(不需要删除context中的id，因为每次都是一个请求，再去访问redis获取不到了（删除redis存储的用户userlogin）)
+        //获取SecurityContextHolder中的用户id
         UsernamePasswordAuthenticationToken authentication = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
-        Long id = loginUser.getUser().getId();
+        Long userid = loginUser.getUser().getId();
         //删除redis中的值
-        String key ="login:"+id;
-        redisCache.deleteObject(key);
+        redisCache.deleteObject("login:"+userid);
         return new ResponseResult(200,"注销成功");
     }
 }

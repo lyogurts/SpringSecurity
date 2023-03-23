@@ -1,5 +1,6 @@
 package com.sangeng.filter;
 
+import com.sangeng.domain.LoginUser;
 import com.sangeng.utils.JwtUtil;
 import com.sangeng.utils.RedisCache;
 import io.jsonwebtoken.Claims;
@@ -45,14 +46,14 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         }
         //从redis获取信息
         String key = "login:" + userId;
-        Object loginUser = redisCache.getCacheObject(key);
+        LoginUser loginUser = redisCache.getCacheObject(key);
         if (ObjectUtils.isEmpty(loginUser)){
           throw   new RuntimeException("用户未登录");
         }
         //存入securityContextHolder
         SecurityContext context = SecurityContextHolder.getContext();
         //认证
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser,null,null);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser,null, loginUser.getAuthorities());
         //放入存入securityContextHolder
         context.setAuthentication(authenticationToken);
         //放行
